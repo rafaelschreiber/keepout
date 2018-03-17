@@ -1,0 +1,233 @@
+#!/usr/bin/env python3
+
+"""
+
+    This is keepout written by Rafael Schreiber.
+    Project stated on February 27th 2018
+    This code is written in PyCharm thanks JetBrains!
+    This is an administrator program!
+
+"""
+
+import os
+import sys
+
+# setting default variables
+MESSAGEFOLDER = "/etc/keepout/"
+USER = os.getenv("USER")
+MESSAGE = MESSAGEFOLDER + USER + ".msg"
+USERLIST = []
+INSTALLLOCATION = os.path.dirname(os.path.abspath(__file__)) + "/" + __file__
+
+
+# creating messages folder
+try:
+    os.mkdir(MESSAGEFOLDER)
+except OSError:
+    pass
+
+
+# check if there is message for running user
+if os.path.exists(MESSAGE):
+    ISMESSAGE = True
+    try:
+        test = open(MESSAGE, 'r')
+        test.close()
+    except OSError:
+        ISMESSAGE = False
+else:
+    ISMESSAGE = False
+
+
+# check all user message files
+try:
+    for entry in os.listdir(MESSAGEFOLDER):
+        if os.path.isfile(MESSAGEFOLDER + entry):
+            if entry[-4:] == ".msg":
+                USERLIST.append(entry[:-4])
+except PermissionError:
+    pass
+except FileNotFoundError:
+    pass
+
+
+def printMessage():
+    print("\033[1;31m" + "The account " + USER + " is currently unavaible." + "\033[1;0m")
+    if ISMESSAGE:
+        print("\033[1;31m" + "Here is a message from the administrator:" + '\n' + "\033[1;0m")
+        with open(MESSAGE, 'r') as message:
+            for line in message.readlines():
+                print("\033[1;31m" + line[:-2] + "\033[1;0m")
+            message.close()
+
+
+def getEditors():
+    editorList = []
+    if os.system("which nano > /dev/null") == 0:
+        editorList.append("nano")
+    if os.system("which vim > /dev/null") == 0:
+        editorList.append("vim")
+    if os.system("which vi > /dev/null") == 0:
+        editorList.append("vi")
+    if os.system("which emacs > /dev/null") == 0:
+        editorList.append("emacs")
+    if os.system("which ed > /dev/null") == 0:
+        editorList.append("ed")
+    return editorList
+
+
+def lockUser(user):
+    if os.system("chsh -s " + INSTALLLOCATION + " " + user + " > /dev/null 2>&1") != 0:
+        print("User: " + user + " doesn't exist")
+        exit(1)
+    else:
+        exit(0)
+
+
+def unlockUser(user):
+    if os.system("chsh -s /bin/bash " + user + " > /dev/null 2>&1") != 0:
+        print("User: " + user + " doesn't exist")
+        exit(1)
+    else:
+        exit(0)
+
+
+def chooseEditor():
+    i = 1
+    editorList = getEditors()
+    if len(editorList) == 0:
+        print("You have no editors installed.")
+        exit(1)
+    if len(editorList) == 1:
+        return 0
+    for editor in editorList:
+        if editor == "nano":
+            print("    " + str(i) + ". " + editor + " <-- Easiest")
+        else:
+            print("    " + str(i) + ". " + editor)
+        i += 1
+    print()
+    while True:
+        try:
+            editor = int(input("Which editor do you want to use?: "))
+            if not(editor >= 1 and editor <= len(editorList)):
+                print("Please type in a number beetween " + str(1) + " and " + str(len(editorList)) + '\n')
+            else:
+                break
+        except ValueError:
+            print("Please type in a number beetween " + str(1) + " and " + str(len(editorList)) + '\n')
+    return editor - 1
+
+
+def editMessage(user):
+    os.system("touch " + MESSAGEFOLDER + user + ".msg")
+    os.system(getEditors()[chooseEditor()] + " " + MESSAGEFOLDER + user + ".msg")
+    exit(0)
+
+
+def deleteMessage(user):
+    try:
+        os.remove(MESSAGEFOLDER + user + ".msg")
+        exit(0)
+    except PermissionError:
+        print("You don't have the permission to delete the message for user: " + user)
+        exit(1)
+    except FileNotFoundError:
+        print("There is no message file for user: " + user)
+        exit(1)
+
+
+def readMessage(user):
+    path = MESSAGEFOLDER + user + ".msg"
+    if not os.path.exists(path):
+        print("Message for user " + user + " doesn't exist.")
+        exit(1)
+    else:
+        os.system("cat " + path)
+        exit(0)
+
+
+def main():
+    try:
+        sys.argv[1] = sys.argv[1]
+    except IndexError:
+        sys.argv.append(None)
+
+    try:
+        sys.argv[2] = sys.argv[2]
+    except IndexError:
+        sys.argv.append(None)
+
+    if sys.argv[1] == "-n" or sys.argv[1] == "--new-message":
+        if sys.argv[2] != None:
+            editMessage(sys.argv[2])
+        print("For which user do you want to create a message file?")
+        while True:
+            user = str(input(">>> "))
+            editMessage(user)
+
+    elif sys.argv[1] == "-e" or sys.argv[1] == "--edit-message":
+        if sys.argv[2] in USERLIST:
+            editMessage(sys.argv[2])
+        while True:
+            print("For which user do you want to edit a message file?")
+            while True:
+                user = str(input(">>> "))
+                if user in USERLIST:
+                    editMessage(user)
+                print("Userfile don't exist\n")
+
+    elif sys.argv[1] == "-d" or sys.argv[1] == "--delete-message":
+        if sys.argv[2] in USERLIST:
+            deleteMessage(sys.argv[2])
+        while True:
+            print("For which user do you want to delete a message file?")
+            while True:
+                user = str(input(">>> "))
+                if user in USERLIST:
+                    deleteMessage(user)
+                print("Userfile don't exist\n")
+
+    elif sys.argv[1] == "-r" or sys.argv[1] == "--read-message":
+        if sys.argv[2] in USERLIST:
+            readMessage(sys.argv[2])
+        while True:
+            print("For which user do you want to read a message file?")
+            while True:
+                user = str(input(">>> "))
+                if user in USERLIST:
+                    readMessage(user)
+                print("Userfile don't exist\n")
+    elif sys.argv[1] == "-l" or sys.argv[1] == "--lock-user":
+        if USER != "root":
+            print("This function is just for administrators")
+            exit(1)
+        if sys.argv[2] != None:
+            lockUser(sys.argv[2])
+        print("Which user do you want to lock?")
+        user = str(input(">>> "))
+        lockUser(user)
+    elif sys.argv[1] == "-u" or sys.argv[1] == "--unlock-user":
+        if USER != "root":
+            print("This function is just for administrators")
+            exit(1)
+        if sys.argv[2] != None:
+            lockUser(sys.argv[2])
+        print("Which user do you want to unlock?")
+        user = str(input(">>> "))
+        unlockUser(user)
+
+
+    else:
+        printMessage()
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        print()
+        exit(1)
+    except EOFError:
+        print()
+        exit(1)
