@@ -17,7 +17,7 @@ MESSAGEFOLDER = "/etc/keepout/"
 USER = os.getenv("USER")
 MESSAGE = MESSAGEFOLDER + USER + ".msg"
 USERLIST = []
-INSTALLLOCATION = os.path.dirname(os.path.abspath(__file__)) + "/" + __file__
+INSTALLLOCATION = os.path.abspath(os.path.dirname(__file__)) + "/keepout"
 
 
 # creating messages folder
