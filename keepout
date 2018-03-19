@@ -212,7 +212,7 @@ def main():
             print("This function is just for administrators")
             exit(1)
         if sys.argv[2] != None:
-            lockUser(sys.argv[2])
+            unlockUser(sys.argv[2])
         print("Which user do you want to unlock?")
         user = str(input(">>> "))
         unlockUser(user)
