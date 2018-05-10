@@ -3,3 +3,4 @@ all:
 
 install:
 	cp $$PWD/keepout /usr/bin/keepout
+	chmod 755 /usr/bin/keepout
